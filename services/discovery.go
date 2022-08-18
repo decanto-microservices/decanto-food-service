@@ -6,6 +6,7 @@ import (
 
 func Discovery() map[string]*consulapi.AgentService {
 	config := consulapi.DefaultConfig()
+	config.Address = "127.0.0.1"
 	consul, error := consulapi.NewClient(config)
 
 	if error != nil {
