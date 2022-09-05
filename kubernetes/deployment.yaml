@@ -1,0 +1,67 @@
+# Ensure HTTP protocol to enable L7 traffic management
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: decanto-food-service
+spec:
+  protocol: "http"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decanto-food-service
+spec:
+  selector:
+    app: decanto-food-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9092
+      targetPort: 9092
+
+---
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: decanto-food-service-deployment
+
+  labels:
+    app: decanto-food-service
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: decanto-food-service
+
+  template:
+    metadata:
+      labels:
+        app: decanto-food-service
+      annotations:
+        consul.hashicorp.com/connect-inject: "true"
+        consul.hashicorp.com/connect-service-upstreams: "consul-server.consul:8500,decanto-db.mongo.cosmos.azure.com:10255"
+
+    spec:
+      containers:
+        - name: decanto-food-service
+
+          image: decanto-food-service:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 9092
+
+          env:
+            - name: CONSUL_ADDR
+              value: "consul-server.consul:8500"
+            - name: PORT
+              value: ":9092"
+            - name: BASE_URL
+              value: "decanto/food"
+            - name: SERVICE_ID
+              value: "decanto-food-service"
